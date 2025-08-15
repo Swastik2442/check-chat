@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import Markdown from "react-markdown";
 
 export default function Home() {
   const [message, setMessage] = useState('');
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  const scrollToBottom = () => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
   const handleNormalChat = async () => {
     setLoading(true);
     setResponse('');
@@ -29,6 +39,7 @@ export default function Home() {
       else
         setResponse(`Error: ${err}`);
     }
+    scrollToBottom();
 
     setLoading(false);
   };
@@ -54,6 +65,7 @@ export default function Home() {
             if (line.startsWith("data: ")) {
               const data = JSON.parse(line.slice(6));
               setResponse((prev) => prev + data);
+              scrollToBottom();
             }
           }
         }
@@ -66,24 +78,29 @@ export default function Home() {
       else
         setResponse(`Error: ${err}`);
     }
+    scrollToBottom();
 
     setLoading(false);
   };
 
   return (
-    <main>
-      <div className="w-full text-center border-b py-2 text-xl">check-chat</div>
-      <div className="flex flex-col w-screen p-4 gap-2">
-        <textarea className="border rounded-md p-1" onChange={e => setMessage(e.target.value)} rows={4} disabled={loading} />
-        {loading ? <p>Loading...</p> : <div className="flex gap-2">
-          <button className="border px-1" onClick={handleNormalChat}>
-            Send Normal
-          </button>
-          <button className="border px-1" onClick={handleStreamChat}>
-            Send Stream
-          </button>
-        </div>}
-        <textarea className="border rounded-md p-1" value={response} rows={4} readOnly />
+    <main className="h-screen flex flex-col overflow-hidden">
+      <div className="shrink-0 w-full text-center border-b py-2 text-lg">check-chat</div>
+      <div className="flex flex-col flex-1 min-h-0 gap-2">
+        <div ref={containerRef} className="p-4 flex-1 min-h-0 overflow-y-auto">
+          <Markdown>{response}</Markdown>
+        </div>
+        <div className="shrink-0 flex gap-2 m-4">
+          <textarea className="border rounded-md w-full p-1" onChange={e => setMessage(e.target.value)} rows={2} disabled={loading} />
+          {loading ? <p>Loading...</p> : <div className="flex flex-col gap-2">
+            <button className="border rounded-md px-1" onClick={handleNormalChat}>
+              Send Normal
+            </button>
+            <button className="border rounded-md px-1" onClick={handleStreamChat}>
+              Send Stream
+            </button>
+          </div>}
+        </div>
       </div>
     </main>
   );
