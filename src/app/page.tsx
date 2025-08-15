@@ -32,8 +32,42 @@ export default function Home() {
 
     setLoading(false);
   };
-  const handleStreamChat = () => {
-    alert("Not implemented yet");
+  const handleStreamChat = async () => {
+    setLoading(true);
+    setResponse('');
+
+    try {
+      const res = await fetch("/api/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
+      if (res.ok && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = JSON.parse(line.slice(6));
+              setResponse((prev) => prev + data);
+            }
+          }
+        }
+      } else {
+        setResponse(`Error: ${res.status} ${res.statusText}`);
+      }
+    } catch (err) {
+      if (err instanceof Error)
+        setResponse(`Error: ${err.message}`);
+      else
+        setResponse(`Error: ${err}`);
+    }
+
+    setLoading(false);
   };
 
   return (
