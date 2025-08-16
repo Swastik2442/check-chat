@@ -17,38 +17,12 @@ export default function Home() {
       });
     }
   };
-  const handleNormalChat = async () => {
+  const handleChat = async () => {
     setLoading(true);
     setResponse('');
 
     try {
-      const res = await fetch("/api/chat/normal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setResponse(data.response);
-      } else {
-        setResponse(`Error: ${res.status} ${res.statusText}`);
-      }
-    } catch (err) {
-      if (err instanceof Error)
-        setResponse(`Error: ${err.message}`);
-      else
-        setResponse(`Error: ${err}`);
-    }
-    scrollToBottom();
-
-    setLoading(false);
-  };
-  const handleStreamChat = async () => {
-    setLoading(true);
-    setResponse('');
-
-    try {
-      const res = await fetch("/api/chat/stream", {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message })
@@ -84,24 +58,16 @@ export default function Home() {
   };
 
   return (
-    <main className="h-screen flex flex-col overflow-hidden">
-      <div className="shrink-0 w-full text-center border-b py-2 text-lg">check-chat</div>
-      <div className="flex flex-col flex-1 min-h-0 gap-2">
-        <div ref={containerRef} className="p-4 flex-1 min-h-0 overflow-y-auto">
-          <Markdown>{response}</Markdown>
-        </div>
-        <div className="shrink-0 flex gap-2 m-4">
-          <textarea className="border rounded-md w-full p-1" onChange={e => setMessage(e.target.value)} rows={2} disabled={loading} />
-          {loading ? <p>Loading...</p> : <div className="flex flex-col gap-2">
-            <button className="border rounded-md px-1" onClick={handleNormalChat}>
-              Send Normal
-            </button>
-            <button className="border rounded-md px-1" onClick={handleStreamChat}>
-              Send Stream
-            </button>
-          </div>}
-        </div>
+    <>
+      <div ref={containerRef} className="p-4 flex-1 min-h-0 overflow-y-auto">
+        <MarkdownRenderer>{response}</MarkdownRenderer>
       </div>
-    </main>
+      <div className="shrink-0 flex gap-2 m-4">
+        <textarea className="border rounded-md w-full p-1" onChange={e => setMessage(e.target.value)} rows={2} disabled={loading} />
+        {loading ? <p>Loading...</p> : <button className="border rounded-md px-1" onClick={handleChat}>
+          Send
+        </button>}
+      </div>
+    </>
   );
 }
