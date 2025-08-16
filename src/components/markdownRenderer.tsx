@@ -14,6 +14,7 @@ type RemarkPlugins = MarkdownParams['remarkPlugins'];
 type RehypePlugins = MarkdownParams['rehypePlugins'];
 type Children = MarkdownParams['children'];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ExtractComponent<T> = Extract<T, React.ComponentType<any>>;
 type InferComponentProps<T> = T extends React.ComponentType<infer P> ? P : never;
 
@@ -43,6 +44,7 @@ const components: Components = {
   h5: (props) => <OverrideComponentClassName tag="h5" props={props} className="text-sm font-bold" />,
   h6: (props) => <OverrideComponentClassName tag="h6" props={props} className="text-xs font-bold" />,
   code(props) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const {children, className, node, ...rest} = props;
     const match = /language-(\w+)/.exec(className || '');
     const codeText = String(children).replace(/\n$/, '');
@@ -58,10 +60,11 @@ const components: Components = {
             {...rest}
             PreTag="div"
             customStyle={{ margin: "0" }}
-            children={codeText}
             language={match[1]}
             style={oneDark}
-          />
+          >
+            {codeText}
+          </SyntaxHighlighter>
         ) : (
           <code {...rest} className={className}>
             {children}

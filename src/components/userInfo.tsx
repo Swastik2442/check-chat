@@ -5,7 +5,7 @@ import {
   UserButton
 } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
-import { SettingsIcon } from "lucide-react";
+import { SettingsIcon, UserCircle2Icon } from "lucide-react";
 
 async function UserInfo() {
   const user = await currentUser();
@@ -17,7 +17,7 @@ async function UserInfo() {
       <SignedIn>
         <div className="flex justify-between items-center">
           <div className="flex gap-2 items-center">
-            <UserButton />
+            <UserButton fallback={<UserCircle2Icon className="size-7" />} />
             <span>{user && user.fullName}</span>
           </div>
           <SettingsIcon className="size-5"/>
