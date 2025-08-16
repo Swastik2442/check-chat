@@ -12,6 +12,7 @@
     "@clerk/nextjs": "^6.31.1",
     "@google/genai": "^1.14.0",
     "@t3-oss/env-nextjs": "^0.13.8",
+    "convex": "^1.25.4",
     "katex": "^0.16.22",
     "lucide-react": "^0.539.0",
     "next": "15.4.6",
