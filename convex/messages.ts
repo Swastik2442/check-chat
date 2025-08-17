@@ -13,7 +13,7 @@ export const getAll = query({
     const user = await getCurrentUser(ctx);
 
     const chat = await ctx.db.get(args.chat);
-    if (!chat || chat.user !== user._id) {
+    if (!chat || chat.user !== user.tokenIdentifier) {
       throw new ConvexError("Chat not found");
     }
 
@@ -32,7 +32,7 @@ export const getHistory = internalQuery({
     const user = await getCurrentUser(ctx);
 
     const chat = await ctx.db.get(args.chatId);
-    if (!chat || chat.user !== user._id) {
+    if (!chat || chat.user !== user.tokenIdentifier) {
       throw new ConvexError("Chat not found");
     }
 

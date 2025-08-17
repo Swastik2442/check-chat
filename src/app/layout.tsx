@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import ConvexClientProvider from "@/contexts/convexClientProvider";
+import { ChatStoreProvider } from "@/contexts/chatStoreProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,11 +28,13 @@ export default function RootLayout({
   return (
     <ClerkProvider>
     <ConvexClientProvider>
+    <ChatStoreProvider>
       <html lang="en">
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden`}>
           {children}
         </body>
       </html>
+    </ChatStoreProvider>
     </ConvexClientProvider>
     </ClerkProvider>
   );

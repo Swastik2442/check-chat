@@ -18,7 +18,7 @@ export const get = query({
 
     const user = await getCurrentUser(ctx);
     const chat = await ctx.db.get(chatId);
-    if (!chat || chat.user !== user._id) {
+    if (!chat || chat.user !== user.tokenIdentifier) {
       throw new ConvexError("Chat not found");
     }
     return chat;
@@ -31,7 +31,7 @@ export const getAll = query({
     const user = await getCurrentUser(ctx);
     return await ctx.db
       .query("chats")
-      .filter((q) => q.eq(q.field("user"), user._id))
+      .filter((q) => q.eq(q.field("user"), user.tokenIdentifier))
       .collect();
   }
 });
@@ -43,7 +43,7 @@ export const startChat = mutation({
     // TODO: Ratelimit before starting
 
     const chatId = await ctx.db.insert("chats", {
-      user: user._id,
+      user: user.tokenIdentifier,
       title: "New Chat"
     });
 
@@ -62,7 +62,7 @@ export const continueChat = mutation({
     // TODO: Ratelimit before continuing
 
     const chat = await ctx.db.get(args.chat);
-    if (!chat || chat.user !== user._id) {
+    if (!chat || chat.user !== user.tokenIdentifier) {
       throw new ConvexError("Chat not found");
     }
 
