@@ -1,0 +1,111 @@
+import { GoogleGenAI } from "@google/genai";
+import { ConvexError, v } from "convex/values";
+import { StreamId } from "@convex-dev/persistent-text-streaming";
+import { query, mutation, httpAction } from "./_generated/server";
+import { api, internal } from "./_generated/api";
+import { streamingComponent } from "./streaming";
+import { getCurrentUser } from "./utils";
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+export const get = query({
+  args: { chatId: v.string() },
+  handler: async (ctx, args) => {
+    const chatId = ctx.db.normalizeId("chats", args.chatId);
+    if (!chatId) {
+      throw new ConvexError("Invalid chatId");
+    }
+
+    const user = await getCurrentUser(ctx);
+    const chat = await ctx.db.get(chatId);
+    if (!chat || chat.user !== user._id) {
+      throw new ConvexError("Chat not found");
+    }
+    return chat;
+  }
+});
+
+export const getAll = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    return await ctx.db
+      .query("chats")
+      .filter((q) => q.eq(q.field("user"), user._id))
+      .collect();
+  }
+});
+
+export const startChat = mutation({
+  args: { body: v.string() },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    // TODO: Ratelimit before starting
+
+    const chatId = await ctx.db.insert("chats", {
+      user: user._id,
+      title: "New Chat"
+    });
+
+    await ctx.db.insert("messages", {
+      bodyOrStreamId: args.body,
+      by: "user",
+      chat: chatId
+    });
+  }
+});
+
+export const continueChat = mutation({
+  args: { body: v.string(), chat: v.id("chats") },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    // TODO: Ratelimit before continuing
+
+    const chat = await ctx.db.get(args.chat);
+    if (!chat || chat.user !== user._id) {
+      throw new ConvexError("Chat not found");
+    }
+
+    await ctx.db.insert("messages", {
+      bodyOrStreamId: args.body,
+      by: "user",
+      chat: chat._id
+    });
+  }
+});
+
+export const streamChat = httpAction(async (ctx, request) => {
+  const body = (await request.json()) as { streamId: string; chatId: string; };
+  const chat = await ctx.runQuery(api.chats.get, { chatId: body.chatId });
+
+  const response = await streamingComponent.stream(
+    ctx,
+    request,
+    body.streamId as StreamId,
+    async (ctx, _request, _streamId, append) => {
+      const history = await ctx.runQuery(internal.messages.getHistory, { chatId: chat._id });
+
+      const stream = await ai.models.generateContentStream({
+        model: "gemini-2.5-flash",
+        config: {
+          systemInstruction: `You are a helpful assistant that can answer questions and help with tasks.
+If possible, provide your response in Markdown format.
+${history.length > 1 ? '' : "\nYou are continuing a conversation. The conversation so far is in the following content:"}`
+        },
+        contents: [
+          ...history
+        ]
+      });
+
+      for await (const chunk of stream) {
+        if (chunk.text)
+          await append(chunk.text);
+      }
+    }
+  );
+
+  response.headers.set("Access-Control-Allow-Origin", "*");
+  response.headers.set("Vary", "Origin");
+
+  return response;
+});

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.31.1",
+    "@convex-dev/persistent-text-streaming": "^0.2.3",
     "@google/genai": "^1.14.0",
     "@t3-oss/env-nextjs": "^0.13.8",
     "convex": "^1.25.4",
