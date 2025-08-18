@@ -52,6 +52,8 @@ export const startChat = mutation({
       by: "user",
       chat: chatId
     });
+
+    return chatId;
   }
 });
 
