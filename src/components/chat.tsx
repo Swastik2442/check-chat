@@ -1,12 +1,17 @@
 "use client";
 
 import { useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useShallow } from "zustand/shallow";
 import { Authenticated, Unauthenticated, useMutation } from "convex/react";
 import { Loader2Icon, SendIcon } from "lucide-react";
 import { api } from "~/api";
 import { useChatStore } from "@/contexts/chatStoreProvider";
-import MessageList from "@/components/messageList";
+
+const MessageList = dynamic(
+  () => import('@/components/messageList'),
+  { ssr: false }
+);
 
 function ContinuedChat() {
   const { chatId, currentMessage, setCurrentMessage } = useChatStore(useShallow((s) => ({
@@ -14,13 +19,12 @@ function ContinuedChat() {
     currentMessage: s.currentMessage,
     setCurrentMessage: s.setCurrentMessage
   })));
-  if (!chatId) throw new Error("Unknown Chat");
 
   const [loading, setLoading] = useState(false);
 
   const continueChat = useMutation(api.chats.continueChat);
   const handleChat = async () => {
-    if (currentMessage.length < 2) return;
+    if (currentMessage.length < 2 || !chatId) return;
     const message = currentMessage;
 
     setLoading(true);

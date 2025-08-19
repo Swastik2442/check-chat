@@ -32,6 +32,7 @@ export const getAll = query({
     return await ctx.db
       .query("chats")
       .filter((q) => q.eq(q.field("user"), user.tokenIdentifier))
+      .order("desc")
       .collect();
   }
 });
@@ -73,6 +74,30 @@ export const continueChat = mutation({
       by: "user",
       chat: chat._id
     });
+  }
+});
+
+export const deleteChat = mutation({
+  args: { chatId: v.id("chats") },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    // TODO: Ratelimit before continuing
+
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.user !== user.tokenIdentifier) {
+      throw new ConvexError("Chat not found");
+    }
+
+    const chatMessages = await ctx.db
+      .query("messages")
+      .filter((q) => q.eq(q.field("chat"), chat._id))
+      .collect();
+
+    for (const msg of chatMessages) {
+      // TODO: Add a way to stop any ongoing streams
+      await ctx.db.delete(msg._id);
+    }
+    await ctx.db.delete(chat._id);
   }
 });
 

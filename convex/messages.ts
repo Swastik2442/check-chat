@@ -14,7 +14,7 @@ export const getAll = query({
 
     const chat = await ctx.db.get(args.chat);
     if (!chat || chat.user !== user.tokenIdentifier) {
-      throw new ConvexError("Chat not found");
+      return [];
     }
 
     return await ctx.db

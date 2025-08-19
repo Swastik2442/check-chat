@@ -9,6 +9,7 @@ import { api } from "~/api";
 import { useChatStore } from "@/contexts/chatStoreProvider";
 import MarkdownRenderer from "@/components/markdownRenderer";
 import { getConvexSiteUrl } from "@/utils/convex";
+import { mergeClasses } from "@/utils/css";
 
 function UserMessage({
   body,
@@ -20,7 +21,7 @@ function UserMessage({
   timestamp: Date;
 } & React.ComponentPropsWithRef<"div">) {
   return (
-    <div className="p-2 bg-gray-600 rounded-md float-end" {...props}>
+    <div className={mergeClasses(className, "p-2 max-w-[80%] wrap-anywhere bg-gray-600 rounded-md self-end")} {...props}>
       <p>{body}</p>
       <span className="text-xs text-gray-400 float-end">{timestamp.toLocaleString()}</span>
     </div>
@@ -30,13 +31,14 @@ function UserMessage({
 function ModelMessage({
   streamId,
   scrollToBottom,
+  className,
   ...props
 }: {
   streamId: StreamId;
   scrollToBottom: () => void;
 } & React.ComponentPropsWithRef<"div">) {
 
-  const isDriven = false; // TODO: temporary value
+  const isDriven = true; // TODO: temporary value
 
   const { text, status } = useStream(
     api.streaming.getStreamBody,
@@ -51,7 +53,7 @@ function ModelMessage({
   }, [text, scrollToBottom]);
 
   return (
-    <div {...props}>
+    <div className={mergeClasses(className, "")} {...props}>
       <MarkdownRenderer>{text || "..."}</MarkdownRenderer>
       {status === "error" && (
         <div className="text-red-500 mt-2">Error loading response</div>
@@ -60,11 +62,9 @@ function ModelMessage({
   );
 }
 
-function MessageList(props: ComponentPropsWithoutRef<"div">) {
+function MessageList({ className, ...props }: ComponentPropsWithoutRef<"div">) {
   const chatId = useChatStore(useShallow((s) => s._id));
-  if (!chatId) throw new Error("Unknown Chat");
-
-  const chatMessages = useQuery(api.messages.getAll, { chat: chatId });
+  const chatMessages = useQuery(api.messages.getAll, chatId === undefined ? "skip" : { chat: chatId });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -77,7 +77,7 @@ function MessageList(props: ComponentPropsWithoutRef<"div">) {
   }, []);
 
   return (
-    <div ref={containerRef} {...props}>
+    <div ref={containerRef} className={mergeClasses(className, "flex flex-col gap-2")} {...props}>
       {chatMessages && chatMessages.map((msg) => (msg.by === "llm") ? (
         <ModelMessage
           key={msg._id}
