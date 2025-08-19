@@ -12,8 +12,8 @@ importers:
         specifier: ^6.31.1
         version: 6.31.1(next@15.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@convex-dev/persistent-text-streaming':
-        specifier: ^0.2.3
-        version: 0.2.3(convex@1.25.4(@clerk/clerk-react@5.42.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        specifier: github:Swastik2442/persistent-text-streaming
+        version: https://codeload.github.com/Swastik2442/persistent-text-streaming/tar.gz/072ad215c51c4ea9225cb9bd82120b8856cf3446(convex@1.25.4(@clerk/clerk-react@5.42.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@google/genai':
         specifier: ^1.14.0
         version: 1.14.0
@@ -157,8 +157,9 @@ packages:
     resolution: {integrity: sha512-wj52aLAH8RrZmHSNTNJIvxwyCuBMNRP2THOshFwpt0Vg62GQi6NtMLRqNH3Pc5y+zrg42SzLiO31PTNZh3ddpQ==}
     engines: {node: '>=18.17.0'}
 
-  '@convex-dev/persistent-text-streaming@0.2.3':
-    resolution: {integrity: sha512-v6by8JB2lXyd+ZBH0I5TOsd98zk+tvmfPt6ofRuxC2GtNkqUpy6F7CdijRaXiGW+ozlUiQyRsBzhvhTUwVUAHg==}
+  '@convex-dev/persistent-text-streaming@https://codeload.github.com/Swastik2442/persistent-text-streaming/tar.gz/072ad215c51c4ea9225cb9bd82120b8856cf3446':
+    resolution: {tarball: https://codeload.github.com/Swastik2442/persistent-text-streaming/tar.gz/072ad215c51c4ea9225cb9bd82120b8856cf3446}
+    version: 0.2.3
     peerDependencies:
       convex: '>=1.23.0 <1.35.0'
       react: ~18.3.1 || ^19.0.0
@@ -2810,7 +2811,7 @@ snapshots:
     dependencies:
       csstype: 3.1.3
 
-  '@convex-dev/persistent-text-streaming@0.2.3(convex@1.25.4(@clerk/clerk-react@5.42.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+  '@convex-dev/persistent-text-streaming@https://codeload.github.com/Swastik2442/persistent-text-streaming/tar.gz/072ad215c51c4ea9225cb9bd82120b8856cf3446(convex@1.25.4(@clerk/clerk-react@5.42.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
       convex: 1.25.4(@clerk/clerk-react@5.42.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
       react: 19.1.0

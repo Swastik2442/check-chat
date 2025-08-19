@@ -2,10 +2,12 @@
 
 import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useShallow } from "zustand/shallow";
-import { Authenticated, Unauthenticated, useMutation } from "convex/react";
+import { useMutation } from "convex/react";
 import { Loader2Icon, SendIcon } from "lucide-react";
 import { api } from "~/api";
+import type { Id } from "~/dataModel";
 import { useChatStore } from "@/contexts/chatStoreProvider";
 
 const MessageList = dynamic(
@@ -13,24 +15,25 @@ const MessageList = dynamic(
   { ssr: false }
 );
 
-function ContinuedChat() {
-  const { chatId, currentMessage, setCurrentMessage } = useChatStore(useShallow((s) => ({
-    chatId: s._id,
+export function ContinuedChat({ id }: { id: Id<"chats"> }) {
+  const { currentMessage, setCurrentMessage, addDrivenStreamId } = useChatStore(useShallow((s) => ({
     currentMessage: s.currentMessage,
-    setCurrentMessage: s.setCurrentMessage
+    setCurrentMessage: s.setCurrentMessage,
+    addDrivenStreamId: s.addDrivenStreamId
   })));
 
   const [loading, setLoading] = useState(false);
 
   const continueChat = useMutation(api.chats.continueChat);
   const handleChat = async () => {
-    if (currentMessage.length < 2 || !chatId) return;
+    if (currentMessage.length < 2) return;
     const message = currentMessage;
 
     setLoading(true);
     setCurrentMessage('');
 
-    await continueChat({ chat: chatId, body: message });
+    const streamId = await continueChat({ chat: id, body: message });
+    addDrivenStreamId(streamId);
 
     setLoading(false);
   };
@@ -58,13 +61,14 @@ function ContinuedChat() {
   );
 }
 
-function NewChat() {
+export default function NewChat() {
   const { message, setMessage, setChat } = useChatStore(useShallow((s) => ({
     message: s.currentMessage,
     setChat: s.setChat,
     setMessage: s.setCurrentMessage
   })));
   const startChat = useMutation(api.chats.startChat);
+  const router = useRouter();
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState(false);
@@ -81,7 +85,9 @@ function NewChat() {
       title: "New Chat",
       user: "me"
     });
+    router.push(`/chat/${chatId}`);
 
+    setMessage('');
     setLoading(false);
   };
 
@@ -92,7 +98,7 @@ function NewChat() {
       <p className="text-lg">{"What's on your mind today?"}</p>
       <div className="flex justify-center items-center w-full gap-2 px-4">
         <textarea
-          className="border rounded-xl w-[70%] focus:w-full transition-[width] duration-500 p-1 resize-none"
+          className="border rounded-xl w-[70%] focus:w-full not-empty:w-full transition-[width] duration-500 p-1 resize-none"
           ref={inputRef}
           defaultValue={message}
           onChange={e => setMessage(e.target.value)}
@@ -108,19 +114,5 @@ function NewChat() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function Chat() {
-  const isNew = useChatStore(useShallow((s) => s.isNew));
-  return (
-    <>
-      <Authenticated>
-        {isNew ? <NewChat /> : <ContinuedChat />}
-      </Authenticated>
-      <Unauthenticated>
-        <NewChat />
-      </Unauthenticated>
-    </>
   );
 }

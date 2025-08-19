@@ -54,6 +54,13 @@ export const startChat = mutation({
       chat: chatId
     });
 
+    const responseStreamId = await streamingComponent.createStream(ctx);
+    await ctx.db.insert("messages", {
+      bodyOrStreamId: responseStreamId,
+      by: "llm",
+      chat: chatId
+    });
+
     return chatId;
   }
 });
@@ -74,6 +81,14 @@ export const continueChat = mutation({
       by: "user",
       chat: chat._id
     });
+
+    const responseStreamId = await streamingComponent.createStream(ctx);
+    await ctx.db.insert("messages", {
+      bodyOrStreamId: responseStreamId,
+      by: "llm",
+      chat: chat._id
+    });
+    return responseStreamId;
   }
 });
 

@@ -6,7 +6,9 @@ import type { StreamId } from "@convex-dev/persistent-text-streaming";
 import { useStream } from "@convex-dev/persistent-text-streaming/react";
 import { useShallow } from "zustand/shallow";
 import { api } from "~/api";
+import { Id } from "~/dataModel";
 import { useChatStore } from "@/contexts/chatStoreProvider";
+import useConvexAuthToken from "@/hooks/convexAuthToken";
 import MarkdownRenderer from "@/components/markdownRenderer";
 import { getConvexSiteUrl } from "@/utils/convex";
 import { mergeClasses } from "@/utils/css";
@@ -29,22 +31,26 @@ function UserMessage({
 }
 
 function ModelMessage({
+  chatId,
   streamId,
+  isDriven,
   scrollToBottom,
   className,
   ...props
 }: {
+  chatId: Id<"chats">;
   streamId: StreamId;
+  isDriven: boolean;
   scrollToBottom: () => void;
 } & React.ComponentPropsWithRef<"div">) {
-
-  const isDriven = true; // TODO: temporary value
-
+  const { data: authToken } = useConvexAuthToken();
   const { text, status } = useStream(
     api.streaming.getStreamBody,
     new URL(`${getConvexSiteUrl()}/chat-stream`),
-    isDriven,
-    streamId
+    isDriven || true,
+    streamId,
+    // @ts-expect-error will work only when auth token is string
+    { authToken, args: { chatId } },
   );
 
   useEffect(() => {
@@ -55,7 +61,7 @@ function ModelMessage({
   return (
     <div className={mergeClasses(className, "")} {...props}>
       <MarkdownRenderer>{text || "..."}</MarkdownRenderer>
-      {status === "error" && (
+      {status === "error" && /* TODO: Make it so that when data is changing from pending -> error -> done, Error is not shown */ (
         <div className="text-red-500 mt-2">Error loading response</div>
       )}
     </div>
@@ -63,7 +69,10 @@ function ModelMessage({
 }
 
 function MessageList({ className, ...props }: ComponentPropsWithoutRef<"div">) {
-  const chatId = useChatStore(useShallow((s) => s._id));
+  const { chatId, drivenStreamIds } = useChatStore(useShallow((s) => ({
+    chatId: s._id,
+    drivenStreamIds: s.drivenStreamIds
+  })));
   const chatMessages = useQuery(api.messages.getAll, chatId === undefined ? "skip" : { chat: chatId });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -81,7 +90,9 @@ function MessageList({ className, ...props }: ComponentPropsWithoutRef<"div">) {
       {chatMessages && chatMessages.map((msg) => (msg.by === "llm") ? (
         <ModelMessage
           key={msg._id}
+          chatId={msg.chat}
           streamId={msg.bodyOrStreamId as StreamId}
+          isDriven={drivenStreamIds.has(msg.bodyOrStreamId as StreamId)}
           scrollToBottom={scrollToBottom}
         />
       ) : (

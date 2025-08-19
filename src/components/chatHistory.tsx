@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useQuery, Authenticated, Unauthenticated, useMutation } from "convex/react";
 import { useShallow } from "zustand/shallow";
 import { api } from "~/api";
@@ -42,18 +43,27 @@ function ChatHistoryList() {
     setChat: s.setChat
   })));
   const chats = useQuery(api.chats.getAll);
+  const router = useRouter();
+
+  const handleNewChat = () => {
+    startNewChat();
+    router.replace("/");
+  };
 
   return (
     <ul className="py-3 flex flex-col gap-1 w-full">
       <li
-        onClick={startNewChat}
+        onClick={handleNewChat}
         title="Start a new Chat"
         className="p-3 w-full rounded-md hover:bg-gray-800/60 hover:cursor-pointer"
       >
         New Chat
       </li>
       {chats && chats.map((chat) => (
-        <ChatItem key={chat._id} chat={chat} onClick={() => setChat(chat)} onDelete={startNewChat} />
+        <ChatItem key={chat._id} chat={chat} onClick={() => {
+          setChat(chat);
+          router.replace(`/chat/${chat._id}`);
+        }} onDelete={handleNewChat} />
       ))}
     </ul>
   );
