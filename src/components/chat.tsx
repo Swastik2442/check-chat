@@ -1,14 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useShallow } from "zustand/shallow";
 import { useMutation } from "convex/react";
-import { Loader2Icon, SendIcon } from "lucide-react";
+import { SendIcon } from "lucide-react";
 import { api } from "~/api";
 import type { Id } from "~/dataModel";
 import { useChatStore } from "@/contexts/chatStoreProvider";
+import useChatText from "@/hooks/chatText";
+import { LoadingIcon } from "@/components/icons";
 
 const MessageList = dynamic(
   () => import('@/components/messageList'),
@@ -16,45 +18,54 @@ const MessageList = dynamic(
 );
 
 export function ContinuedChat({ id }: { id: Id<"chats"> }) {
-  const { currentMessage, setCurrentMessage, addDrivenStreamId } = useChatStore(useShallow((s) => ({
-    currentMessage: s.currentMessage,
-    setCurrentMessage: s.setCurrentMessage,
-    addDrivenStreamId: s.addDrivenStreamId
-  })));
+  const addDrivenStreamId = useChatStore(useShallow((s) => s.addDrivenStreamId));
 
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  useChatText(inputRef);
 
   const continueChat = useMutation(api.chats.continueChat);
-  const handleChat = async () => {
-    if (currentMessage.length < 2) return;
-    const message = currentMessage;
-
+  const handleChat = useCallback(async () => {
+    if (!inputRef.current || inputRef.current.value.length < 2) return;
     setLoading(true);
-    setCurrentMessage('');
 
-    const streamId = await continueChat({ chat: id, body: message });
+    const streamId = await continueChat({ chat: id, body: inputRef.current.value });
     addDrivenStreamId(streamId);
 
+    inputRef.current.value = '';
     setLoading(false);
-  };
+  }, [id, continueChat, setLoading, addDrivenStreamId]);
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!inputRef.current
+      || document.activeElement !== inputRef.current
+      || e.key !== "Enter"
+      || e.shiftKey) return;
+
+      e.preventDefault();
+      handleChat();
+    };
+
+    document.addEventListener("keydown", handleKeyPress)
+    return () => document.removeEventListener("keydown", handleKeyPress)
+  }, [handleChat]);
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col gap-2">
+    <div className="flex-1 min-h-0 h-full flex flex-col justify-end gap-2">
       <MessageList className="p-4 flex-1 min-h-0 overflow-y-auto" />
       <div className="shrink-0 flex gap-2 m-4">
         <textarea
-          autoFocus={true}
+          name="input"
           className="border rounded-xl w-full p-1 resize-none"
-          value={currentMessage}
-          onChange={e => setCurrentMessage(e.target.value)}
+          ref={inputRef}
           contentEditable={!loading}
+          autoFocus={true}
         />
         <div className="flex justify-center items-center">
-          {loading ? <Loader2Icon className="size-5" /> : <>
-            <button role="button" className="flex justify-center items-center border rounded-full p-2" onClick={handleChat}>
-              <SendIcon className="size-5" />
-            </button>
-          </>}
+          <button role="button" className="flex justify-center items-center border rounded-full p-2" onClick={handleChat} disabled={loading}>
+            {loading ? <LoadingIcon className="size-5" /> : <SendIcon className="size-5" />}
+          </button>
         </div>
       </div>
     </div>
@@ -62,36 +73,38 @@ export function ContinuedChat({ id }: { id: Id<"chats"> }) {
 }
 
 export default function NewChat() {
-  const { message, setMessage, setChat } = useChatStore(useShallow((s) => ({
-    message: s.currentMessage,
-    setChat: s.setChat,
-    setMessage: s.setCurrentMessage
-  })));
-  const startChat = useMutation(api.chats.startChat);
   const router = useRouter();
+  const startChat = useMutation(api.chats.startChat);
 
-  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  useChatText(inputRef);
 
-  const handleChat = async () => {
-    if (message.length < 2) return;
-
+  const handleChat = useCallback(async () => {
+    if (!inputRef.current || inputRef.current.value.length < 2) return;
     setLoading(true);
 
-    const chatId = await startChat({ body: message });
-    setChat({ // Temporary Values, will get updated
-      _id: chatId,
-      _creationTime: new Date().getTime(),
-      title: "New Chat",
-      user: "me"
-    });
+    const chatId = await startChat({ body: inputRef.current.value });
     router.push(`/chat/${chatId}`);
 
-    setMessage('');
+    inputRef.current.value = '';
     setLoading(false);
-  };
+  }, [router, startChat, setLoading]);
 
-  // TODO: Add a way such that on pressing Enter when textarea is in focus, startChat. When Shift + Enter, enter new line
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!inputRef.current
+      || document.activeElement !== inputRef.current
+      || e.key !== "Enter"
+      || e.shiftKey) return;
+
+      e.preventDefault();
+      handleChat();
+    };
+
+    document.addEventListener("keydown", handleKeyPress)
+    return () => document.removeEventListener("keydown", handleKeyPress)
+  }, [handleChat]);
 
   return (
     <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-4">
@@ -100,17 +113,12 @@ export default function NewChat() {
         <textarea
           className="border rounded-xl w-[70%] focus:w-full not-empty:w-full transition-[width] duration-500 p-1 resize-none"
           ref={inputRef}
-          defaultValue={message}
-          onChange={e => setMessage(e.target.value)}
           contentEditable={!loading}
-          autoFocus={true}
         />
         <div className="flex justify-center items-center">
-          {loading ? <Loader2Icon className="size-5" /> : <>
-            <button role="button" className="flex justify-center items-center border rounded-full p-2" onClick={handleChat}>
-              <SendIcon className="size-5" />
-            </button>
-          </>}
+          <button role="button" className="flex justify-center items-center border rounded-full p-2" onClick={handleChat} disabled={loading}>
+            {loading ? <LoadingIcon className="size-5" /> : <SendIcon className="size-5" />}
+          </button>
         </div>
       </div>
     </div>
