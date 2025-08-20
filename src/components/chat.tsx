@@ -29,10 +29,14 @@ export function ContinuedChat({ id }: { id: Id<"chats"> }) {
     if (!inputRef.current || inputRef.current.value.length < 2) return;
     setLoading(true);
 
-    const { responseStreamId } = await continueChat({ chat: id, body: inputRef.current.value });
-    addDrivenStreamId(responseStreamId);
+    try {
+      const { responseStreamId } = await continueChat({ chat: id, body: inputRef.current.value });
+      addDrivenStreamId(responseStreamId);
+      inputRef.current.value = '';
+    } catch (err) {
+      console.log(err);
+    }
 
-    inputRef.current.value = '';
     setLoading(false);
   }, [id, continueChat, setLoading, addDrivenStreamId]);
   useChatTextKS(inputRef, handleChat);
@@ -71,11 +75,15 @@ export default function NewChat() {
     if (!inputRef.current || inputRef.current.value.length < 2) return;
     setLoading(true);
 
-    const { chatId, responseStreamId } = await startChat({ body: inputRef.current.value });
-    addDrivenStreamId(responseStreamId);
-    router.push(`/chat/${chatId}`);
+    try {
+      const { chatId, responseStreamId } = await startChat({ body: inputRef.current.value });
+      addDrivenStreamId(responseStreamId);
+      router.push(`/chat/${chatId}`);
+      inputRef.current.value = '';
+    } catch (err) {
+      console.log(err);
+    }
 
-    inputRef.current.value = '';
     setLoading(false);
   }, [router, startChat, setLoading, addDrivenStreamId]);
   useChatTextKS(inputRef, handleChat);

@@ -28,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <QueryClientProvider>
-    <ClerkProvider>
+    <ClerkProvider afterSignOutUrl="/">
     <ConvexClientProvider>
     <ChatStoreProvider>
       <html lang="en">

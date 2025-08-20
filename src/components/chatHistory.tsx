@@ -77,7 +77,7 @@ function ChatHistory() {
         <ChatHistoryList />
       </Authenticated>
       <Unauthenticated>
-        <p className="text-sm text-foreground/70">Sign in to start saving your AI Chats</p>
+        <p className="text-sm text-foreground/70 p-3">Sign in to start saving your AI Chats</p>
       </Unauthenticated>
     </div>
   );
