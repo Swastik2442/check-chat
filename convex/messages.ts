@@ -6,9 +6,7 @@ import { streamingComponent } from "./streaming";
 import { getCurrentUser } from "./utils";
 
 export const getAll = query({
-  args: {
-    chat: v.id("chats")
-  },
+  args: { chat: v.id("chats") },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
 
@@ -25,20 +23,11 @@ export const getAll = query({
 });
 
 export const getHistory = internalQuery({
-  args: {
-    chatId: v.id("chats")
-  },
+  args: { chatId: v.id("chats") },
   handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-
-    const chat = await ctx.db.get(args.chatId);
-    if (!chat || chat.user !== user.tokenIdentifier) {
-      throw new ConvexError("Chat not found");
-    }
-
     const chatMessages = await ctx.db
       .query("messages")
-      .filter((q) => q.eq(q.field("chat"), chat._id))
+      .filter((q) => q.eq(q.field("chat"), args.chatId))
       .order("asc")
       .collect();
 

@@ -1,9 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 import { ConvexError, v } from "convex/values";
-import { StreamId } from "@convex-dev/persistent-text-streaming";
+import type { StreamId } from "@convex-dev/persistent-text-streaming";
 import { query, mutation, httpAction } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { streamingComponent } from "./streaming";
+import { rateLimiter } from "./ratelimiting";
 import { getCurrentUser } from "./utils";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -41,7 +42,7 @@ export const startChat = mutation({
   args: { body: v.string() },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    // TODO: Ratelimit before starting
+    await rateLimiter.limit(ctx, "sendMessage", { key: user.tokenIdentifier, throws: true });
 
     const chatId = await ctx.db.insert("chats", {
       user: user.tokenIdentifier,
@@ -69,7 +70,7 @@ export const continueChat = mutation({
   args: { body: v.string(), chat: v.id("chats") },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    // TODO: Ratelimit before continuing
+    await rateLimiter.limit(ctx, "sendMessage", { key: user.tokenIdentifier, throws: true });
 
     const chat = await ctx.db.get(args.chat);
     if (!chat || chat.user !== user.tokenIdentifier) {
@@ -96,7 +97,6 @@ export const deleteChat = mutation({
   args: { chatId: v.id("chats") },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    // TODO: Ratelimit before continuing
 
     const chat = await ctx.db.get(args.chatId);
     if (!chat || chat.user !== user.tokenIdentifier) {
@@ -118,13 +118,13 @@ export const deleteChat = mutation({
 
 export const streamChat = httpAction(async (ctx, request) => {
   const body = (await request.json()) as { streamId: string; chatId: string; };
-  const chat = await ctx.runQuery(api.chats.get, { chatId: body.chatId });
 
   const response = await streamingComponent.stream(
     ctx,
     request,
     body.streamId as StreamId,
     async (ctx, _request, _streamId, append) => {
+      const chat = await ctx.runQuery(api.chats.get, { chatId: body.chatId });
       const history = await ctx.runQuery(internal.messages.getHistory, { chatId: chat._id });
 
       const stream = await ai.models.generateContentStream({

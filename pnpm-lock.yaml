@@ -14,6 +14,9 @@ importers:
       '@convex-dev/persistent-text-streaming':
         specifier: github:Swastik2442/persistent-text-streaming
         version: https://codeload.github.com/Swastik2442/persistent-text-streaming/tar.gz/072ad215c51c4ea9225cb9bd82120b8856cf3446(convex@1.25.4(@clerk/clerk-react@5.42.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@convex-dev/rate-limiter':
+        specifier: ^0.2.12
+        version: 0.2.12(convex@1.25.4(@clerk/clerk-react@5.42.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))(react@19.1.0)
       '@google/genai':
         specifier: ^1.14.0
         version: 1.14.0
@@ -164,6 +167,15 @@ packages:
       convex: '>=1.23.0 <1.35.0'
       react: ~18.3.1 || ^19.0.0
       react-dom: ~18.3.1 || ^19.0.0
+
+  '@convex-dev/rate-limiter@0.2.12':
+    resolution: {integrity: sha512-Z7YXDSPa28/8eqVJYUWQBwK9hTiJcXfWY2qZ44Im3VpuBFJZCqYjem7QWjvoTlBjVGqK7FKw26xRneei09hm2w==}
+    peerDependencies:
+      convex: ~1.16.5 || >=1.17.0 <1.35.0
+      react: ^18.3.1 || ^19.0.0
+    peerDependenciesMeta:
+      react:
+        optional: true
 
   '@emnapi/core@1.4.5':
     resolution: {integrity: sha512-XsLw1dEOpkSX/WucdqUhPWP7hDxSvZiY+fsUC14h+FtQ2Ifni4znbBt8punRX+Uj2JG/uDb8nEHVKvrVlvdZ5Q==}
@@ -2816,6 +2828,12 @@ snapshots:
       convex: 1.25.4(@clerk/clerk-react@5.42.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
+
+  '@convex-dev/rate-limiter@0.2.12(convex@1.25.4(@clerk/clerk-react@5.42.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      convex: 1.25.4(@clerk/clerk-react@5.42.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
+    optionalDependencies:
+      react: 19.1.0
 
   '@emnapi/core@1.4.5':
     dependencies:
