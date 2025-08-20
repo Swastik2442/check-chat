@@ -16,12 +16,18 @@ import { mergeClasses } from "@/utils/css";
 function UserMessage({
   body,
   timestamp,
+  scrollToBottom,
   className,
   ...props
 }: {
   body: string;
   timestamp: Date;
+  scrollToBottom: () => void;
 } & React.ComponentPropsWithRef<"div">) {
+  useEffect(() => {
+    scrollToBottom();
+  }, [scrollToBottom]);
+
   return (
     <div className={mergeClasses(className, "p-2 max-w-[80%] wrap-anywhere bg-gray-600 rounded-md self-end")} {...props}>
       <p>{body}</p>
@@ -100,6 +106,7 @@ function MessageList({ className, ...props }: ComponentPropsWithoutRef<"div">) {
           key={msg._id}
           body={msg.bodyOrStreamId}
           timestamp={new Date(msg._creationTime)}
+          scrollToBottom={scrollToBottom}
         />
       ))}
     </div>

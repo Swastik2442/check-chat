@@ -4,7 +4,9 @@ import { useEffect } from "react";
 
 const CHAT_TEXT_KEY = "check-chat-text";
 
-export function useChatText(inputRef: React.RefObject<HTMLTextAreaElement | null>) {
+type TextAreaElementRef = React.RefObject<HTMLTextAreaElement | null>;
+
+export function useSavedChatText(inputRef: TextAreaElementRef) {
   useEffect(() => {
     const savedChatText = localStorage.getItem(CHAT_TEXT_KEY);
     if (savedChatText) inputRef.current!.value = savedChatText;
@@ -17,8 +19,22 @@ export function useChatText(inputRef: React.RefObject<HTMLTextAreaElement | null
         localStorage.setItem(CHAT_TEXT_KEY, text);
     };
     inputRef.current!.addEventListener('change', saveLocally);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [inputRef]);
 }
 
-export default useChatText;
+export function useChatTextKS(inputRef: TextAreaElementRef, sendText: () => void) {
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!inputRef.current
+      || document.activeElement !== inputRef.current
+      || e.key !== "Enter"
+      || e.shiftKey) return;
+
+      e.preventDefault();
+      sendText();
+    };
+
+    document.addEventListener("keydown", handleKeyPress)
+    return () => document.removeEventListener("keydown", handleKeyPress)
+  }, [inputRef, sendText]);
+}

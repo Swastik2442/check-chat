@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useShallow } from "zustand/shallow";
@@ -9,7 +9,7 @@ import { SendIcon } from "lucide-react";
 import { api } from "~/api";
 import type { Id } from "~/dataModel";
 import { useChatStore } from "@/contexts/chatStoreProvider";
-import useChatText from "@/hooks/chatText";
+import { useSavedChatText, useChatTextKS } from "@/hooks/chatText";
 import { LoadingIcon } from "@/components/icons";
 
 const MessageList = dynamic(
@@ -22,34 +22,20 @@ export function ContinuedChat({ id }: { id: Id<"chats"> }) {
 
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  useChatText(inputRef);
+  useSavedChatText(inputRef);
 
   const continueChat = useMutation(api.chats.continueChat);
   const handleChat = useCallback(async () => {
     if (!inputRef.current || inputRef.current.value.length < 2) return;
     setLoading(true);
 
-    const streamId = await continueChat({ chat: id, body: inputRef.current.value });
-    addDrivenStreamId(streamId);
+    const { responseStreamId } = await continueChat({ chat: id, body: inputRef.current.value });
+    addDrivenStreamId(responseStreamId);
 
     inputRef.current.value = '';
     setLoading(false);
   }, [id, continueChat, setLoading, addDrivenStreamId]);
-
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (!inputRef.current
-      || document.activeElement !== inputRef.current
-      || e.key !== "Enter"
-      || e.shiftKey) return;
-
-      e.preventDefault();
-      handleChat();
-    };
-
-    document.addEventListener("keydown", handleKeyPress)
-    return () => document.removeEventListener("keydown", handleKeyPress)
-  }, [handleChat]);
+  useChatTextKS(inputRef, handleChat);
 
   return (
     <div className="flex-1 min-h-0 h-full flex flex-col justify-end gap-2">
@@ -75,36 +61,24 @@ export function ContinuedChat({ id }: { id: Id<"chats"> }) {
 export default function NewChat() {
   const router = useRouter();
   const startChat = useMutation(api.chats.startChat);
+  const addDrivenStreamId = useChatStore(useShallow((s) => s.addDrivenStreamId));
 
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  useChatText(inputRef);
+  useSavedChatText(inputRef);
 
   const handleChat = useCallback(async () => {
     if (!inputRef.current || inputRef.current.value.length < 2) return;
     setLoading(true);
 
-    const chatId = await startChat({ body: inputRef.current.value });
+    const { chatId, responseStreamId } = await startChat({ body: inputRef.current.value });
+    addDrivenStreamId(responseStreamId);
     router.push(`/chat/${chatId}`);
 
     inputRef.current.value = '';
     setLoading(false);
-  }, [router, startChat, setLoading]);
-
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (!inputRef.current
-      || document.activeElement !== inputRef.current
-      || e.key !== "Enter"
-      || e.shiftKey) return;
-
-      e.preventDefault();
-      handleChat();
-    };
-
-    document.addEventListener("keydown", handleKeyPress)
-    return () => document.removeEventListener("keydown", handleKeyPress)
-  }, [handleChat]);
+  }, [router, startChat, setLoading, addDrivenStreamId]);
+  useChatTextKS(inputRef, handleChat);
 
   return (
     <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-4">

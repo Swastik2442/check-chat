@@ -61,7 +61,7 @@ export const startChat = mutation({
       chat: chatId
     });
 
-    return chatId;
+    return { chatId, responseStreamId };
   }
 });
 
@@ -88,7 +88,7 @@ export const continueChat = mutation({
       by: "llm",
       chat: chat._id
     });
-    return responseStreamId;
+    return { responseStreamId };
   }
 });
 
