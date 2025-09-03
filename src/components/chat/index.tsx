@@ -13,7 +13,7 @@ import { useSavedChatText, useChatTextKS } from "@/hooks/chatText";
 import { LoadingIcon } from "@/components/icons";
 
 const MessageList = dynamic(
-  () => import('@/components/messageList'),
+  () => import('@/components/chat/messageList'),
   { ssr: false }
 );
 
@@ -43,8 +43,8 @@ export function ContinuedChat({ id }: { id: Id<"chats"> }) {
 
   return (
     <div className="flex-1 min-h-0 h-full flex flex-col justify-end gap-2">
-      <MessageList className="p-4 flex-1 min-h-0 overflow-y-auto" />
-      <div className="shrink-0 flex gap-2 m-4">
+      <MessageList className="p-4 flex-1 min-h-0 overflow-y-auto pr-12" />
+      <div className="shrink-0 flex gap-2 m-4 mr-16">
         <textarea
           name="input"
           className="border rounded-xl w-full p-1 resize-none"

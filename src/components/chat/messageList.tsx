@@ -9,9 +9,11 @@ import { api } from "~/api";
 import { Id } from "~/dataModel";
 import { useChatStore } from "@/contexts/chatStoreProvider";
 import useConvexAuthToken from "@/hooks/convexAuthToken";
-import MarkdownRenderer from "@/components/markdownRenderer";
+import MarkdownRenderer from "@/components/chat/markdownRenderer";
+import CopyText from "@/components/copyTextButton";
 import { getConvexSiteUrl } from "@/utils/convex";
 import { mergeClasses } from "@/utils/css";
+import { getFormattedDate } from "@/utils/time";
 
 function UserMessage({
   body,
@@ -29,9 +31,16 @@ function UserMessage({
   }, [scrollToBottom]);
 
   return (
-    <div className={mergeClasses(className, "p-2 max-w-[80%] wrap-anywhere bg-gray-600 rounded-md self-end")} {...props}>
-      <p>{body}</p>
-      <span className="text-xs text-gray-400 float-end">{timestamp.toLocaleString()}</span>
+    <div className={mergeClasses(className, "max-w-[80%] self-end group")}>
+      <div className="p-2 max-w-full wrap-anywhere bg-gray-600 rounded-md flex flex-col" {...props}>
+        <p>{body}</p>
+        <span className="text-xs text-gray-400 self-end" title={timestamp.toLocaleString()}>
+          {getFormattedDate(timestamp)}
+        </span>
+      </div>
+      <div className="invisible group-hover:visible float-end">
+        <CopyText text={body} className="text-sm hover:cursor-pointer hover:bg-[rgb(50,54,62)]" />
+      </div>
     </div>
   );
 }
@@ -65,11 +74,14 @@ function ModelMessage({
   }, [text, scrollToBottom]);
 
   return (
-    <div className={mergeClasses(className, "")} {...props}>
+    <div className={mergeClasses(className, "group")} {...props}>
       <MarkdownRenderer>{text || "..."}</MarkdownRenderer>
       {status === "error" && /* TODO: Make it so that when data is changing from pending -> error -> done, Error is not shown */ (
         <div className="text-red-500 mt-2">Error loading response</div>
       )}
+      {status === "done" && <div className="invisible group-hover:visible">
+        <CopyText text={text} className="text-sm hover:cursor-pointer hover:bg-[rgb(50,54,62)]" />
+      </div>}
     </div>
   );
 }
