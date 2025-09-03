@@ -1,12 +1,13 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, Authenticated, Unauthenticated, useMutation } from "convex/react";
 import { useShallow } from "zustand/shallow";
+import { PencilIcon, Trash2Icon } from "lucide-react";
 import { api } from "~/api";
 import { Doc } from "~/dataModel";
 import { useChatStore } from "@/contexts/chatStoreProvider";
-import { Trash2Icon } from "lucide-react";
 
 function ChatItem({
   chat, onDelete, ...props
@@ -14,25 +15,64 @@ function ChatItem({
   chat: Doc<"chats">;
   onDelete: () => void;
 } & Omit<React.ComponentPropsWithRef<"li">, "className">) {
+  const [editingTitle, setEditingTitle] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const setChatTitle = useMutation(api.chats.setChatTitle);
   const deleteChat = useMutation(api.chats.deleteChat);
+
+  const editChatTitle = () => {
+    const title = inputRef.current?.value.trim();
+    if (title && title !== chat.title && /^[a-zA-Z0-9 \-_]{1,30}$/.test(title))
+      setChatTitle({ chatId: chat._id, title });
+    setEditingTitle(false);
+  };
+
   return (
     <li
       className="p-3 w-full flex justify-between items-center rounded-md hover:bg-gray-800/60 hover:cursor-pointer group"
       title={chat.title}
       {...props}
     >
-      <span>{chat.title}</span>
-      <button
-        type="button"
-        onClick={() => {
-          onDelete();
-          deleteChat({ chatId: chat._id });
-        }}
-        title="Delete Chat"
-        className="invisible group-hover:visible hover:cursor-pointer"
-      >
-        <Trash2Icon className="size-5 text-gray-600" />
-      </button>
+      {editingTitle ? <>
+        <input
+          type="text"
+          ref={inputRef}
+          defaultValue={chat.title}
+          onKeyUp={(e) => {
+            if (e.key === "Enter") {
+              editChatTitle();
+            } else if (e.key === "Escape") {
+              setEditingTitle(false);
+            }
+          }}
+          onBlur={editChatTitle}
+          className="border-b border-gray-600 bg-transparent focus:outline-none"
+          autoFocus
+        />
+      </> : <>
+        <span className="text-ellipsis whitespace-nowrap overflow-hidden">{chat.title}</span>
+        <div className="flex justify-between items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setEditingTitle(true)}
+            title="Rename Chat"
+            className="invisible group-hover:visible hover:cursor-pointer"
+          >
+            <PencilIcon className="size-5 text-gray-600" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onDelete();
+              deleteChat({ chatId: chat._id });
+            }}
+            title="Delete Chat"
+            className="invisible group-hover:visible hover:cursor-pointer"
+          >
+            <Trash2Icon className="size-5 text-gray-600" />
+          </button>
+        </div>
+      </>}
     </li>
   );
 }

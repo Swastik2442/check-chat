@@ -1,7 +1,7 @@
 import { GoogleGenAI, ApiError } from "@google/genai";
 import { ConvexError, v } from "convex/values";
 import type { StreamId } from "@convex-dev/persistent-text-streaming";
-import { query, mutation, httpAction } from "./_generated/server";
+import { query, mutation, httpAction, internalAction, internalMutation } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { streamingComponent } from "./streaming";
 import { rateLimiter } from "./ratelimiting";
@@ -48,6 +48,7 @@ export const startChat = mutation({
       user: user.tokenIdentifier,
       title: "New Chat"
     });
+    await ctx.scheduler.runAfter(0, internal.chats.generateChatTitle, { chatId });
 
     await ctx.db.insert("messages", {
       bodyOrStreamId: args.body,
@@ -93,6 +94,68 @@ export const continueChat = mutation({
   }
 });
 
+export const setChatTitle = mutation({
+  args: { chatId: v.id("chats"), title: v.string() },
+  handler: async (ctx, args) => {
+    if (!/^[a-zA-Z0-9 \-_]{1,30}$/.test(args.title)) {
+      throw new ConvexError("Invalid title");
+    }
+
+    const user = await getCurrentUser(ctx);
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.user !== user.tokenIdentifier) {
+      throw new ConvexError("Chat not found");
+    }
+
+    await ctx.db.patch(chat._id, { title: args.title });
+  }
+});
+
+export const setGeneratedChatTitle = internalMutation({
+  args: { chatId: v.id("chats"), title: v.string() },
+  handler: async (ctx, args) => {
+    if (!/^[a-zA-Z0-9 \-_]{1,30}$/.test(args.title)) {
+      throw new ConvexError("Invalid title");
+    }
+
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat) {
+      throw new ConvexError("Chat not found");
+    }
+
+    await ctx.db.patch(chat._id, { title: args.title });
+  }
+});
+
+export const generateChatTitle = internalAction({
+  args: { chatId: v.id("chats") },
+  handler: async (ctx, args) => {
+    const history = await ctx.runQuery(internal.messages.getHistory, { chatId: args.chatId });
+    if (history.length === 0) return;
+
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        config: {
+          systemInstruction: `You are a text summarization assistant that can create small summaries of large texts. You only create a summary of at most 10 words or 30 characters as the summary you create is used as the title of the text you summarized.
+Here is a conversation history of a chat with an LLM. Summarize the text such that it can be used as the title of the chat.
+Only return the title itself in plain text (no special characters or symbols), nothing else. If the conversation is empty, return "New Chat" always.`
+        },
+        contents: history
+      });
+
+      if (!response.text) return;
+      await ctx.runMutation(internal.chats.setGeneratedChatTitle, { chatId: args.chatId, title: response.text });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        console.log("Error occurred while generating chat title: " + err.message);
+        return;
+      }
+      throw new ConvexError(`Failed to get response from LLM: ${err}`);
+    }
+  }
+});
+
 export const deleteChat = mutation({
   args: { chatId: v.id("chats") },
   handler: async (ctx, args) => {
@@ -135,9 +198,7 @@ export const streamChat = httpAction(async (ctx, request) => {
   If possible, provide your response in Markdown format.
   ${history.length > 1 ? '' : "\nYou are continuing a conversation. The conversation so far is in the following content:"}`
           },
-          contents: [
-            ...history
-          ]
+          contents: history
         });
 
         for await (const chunk of stream) {
