@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ApiError } from "@google/genai";
 import { ConvexError, v } from "convex/values";
 import type { StreamId } from "@convex-dev/persistent-text-streaming";
 import { query, mutation, httpAction } from "./_generated/server";
@@ -127,21 +127,29 @@ export const streamChat = httpAction(async (ctx, request) => {
       const chat = await ctx.runQuery(api.chats.get, { chatId: body.chatId });
       const history = await ctx.runQuery(internal.messages.getHistory, { chatId: chat._id });
 
-      const stream = await ai.models.generateContentStream({
-        model: "gemini-2.5-flash",
-        config: {
-          systemInstruction: `You are a helpful assistant that can answer questions and help with tasks.
-If possible, provide your response in Markdown format.
-${history.length > 1 ? '' : "\nYou are continuing a conversation. The conversation so far is in the following content:"}`
-        },
-        contents: [
-          ...history
-        ]
-      });
+      try {
+        const stream = await ai.models.generateContentStream({
+          model: "gemini-2.5-flash",
+          config: {
+            systemInstruction: `You are a helpful assistant that can answer questions and help with tasks.
+  If possible, provide your response in Markdown format.
+  ${history.length > 1 ? '' : "\nYou are continuing a conversation. The conversation so far is in the following content:"}`
+          },
+          contents: [
+            ...history
+          ]
+        });
 
-      for await (const chunk of stream) {
-        if (chunk.text)
-          await append(chunk.text);
+        for await (const chunk of stream) {
+          if (chunk.text)
+            await append(chunk.text);
+        }
+      } catch (err) {
+        if (err instanceof ApiError) {
+          await append(err.message);
+          return;
+        }
+        throw new ConvexError(`Failed to get response from LLM: ${err}`);
       }
     }
   );
